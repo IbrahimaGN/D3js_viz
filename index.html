@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisation avec D3.js</title>
+    <!-- Importation de la bibliothèque D3.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
+    <style>
+        /* Styles pour le corps de la page */
+        body {
+            background-color: #1e1e1e; /* Couleur de fond sombre pour la page */
+            color: #ffffff; /* Couleur du texte en blanc */
+        }
+        /* Styles pour le conteneur des graphiques */
+        .chart-container {
+            display: flex; /* Utilisation du flexbox pour aligner les graphiques */
+            flex-wrap: wrap; /* Les graphiques peuvent se décomposer en plusieurs lignes */
+            justify-content: space-around; /* Espacement égal entre les graphiques */
+        }
+        /* Styles pour chaque graphique individuel */
+        .chart {
+            margin: 20px; /* Espacement autour de chaque graphique */
+            padding: 10px; /* Espacement interne du graphique */
+            background-color: #2a2a2a; /* Couleur de fond légèrement plus claire pour les graphiques */
+        }
+        /* Styles pour les titres des graphiques */
+        .chart-title {
+            text-align: center; /* Alignement du texte au centre */
+            margin-top: 40px; /* Espacement au-dessus du titre */
+        }
+    </style>
+</head>
+<body>
+    <!-- Conteneur pour les graphiques -->
+    <div class="chart-container">
+        <div id="chart1" class="chart"></div> <!-- Premier graphique -->
+        <div id="chart2" class="chart"></div> <!-- Deuxième graphique -->
+        <div id="chart4" class="chart"></div> <!-- Quatrième graphique -->
+    </div>
+
+    <script>
+        // Définition des marges, largeur et hauteur pour les graphiques
+        const margin = { top: 30, right: 30, bottom: 90, left: 60 }, 
+            width = 460 - margin.left - margin.right,
+            height = 450 - margin.top - margin.bottom; 
+
+        // Création du premier SVG pour le graphique 1
+        const svg1 = d3.select("#chart1").append("svg")
+            .attr("width", width + margin.left + margin.right) // Largeur totale du SVG
+            .attr("height", height + margin.top + margin.bottom) // Hauteur totale du SVG
+            .append("g") // Création d'un groupe pour les éléments du graphique
+            .attr("transform", `translate(${margin.left},${margin.top})`); // Déplacement du groupe en fonction des marges
+
+        // Création du deuxième SVG pour le graphique 2
+        const svg2 = d3.select("#chart2").append("svg")
+            .attr("width", width + margin.left + margin.right) // Largeur totale du SVG
+            .attr("height", height + margin.top + margin.bottom) // Hauteur totale du SVG
+            .append("g") // Création d'un groupe pour les éléments du graphique
+            .attr("transform", `translate(${margin.left},${margin.top})`); // Déplacement du groupe en fonction des marges
+
+        // Création du quatrième SVG pour le graphique 4
+        const svg4 = d3.select("#chart4").append("svg")
+            .attr("width", width + margin.left + margin.right) // Largeur totale du SVG
+            .attr("height", height + margin.top + margin.bottom) // Hauteur totale du SVG
+            .append("g") // Création d'un groupe pour les éléments du graphique
+            .attr("transform", `translate(${margin.left},${margin.top})`); // Déplacement du groupe en fonction des marges
+
+        // Chargement des données à partir du fichier CSV
+        d3.csv("transformed_products.csv").then(function(data) {
+
+            // Graphique 1: Prix moyen par marque (Bar chart)
+            const brandData = d3.groups(data, d => d.Brand)
+                .map(([key, values]) => {
+                    return {
+                        Brand: key,
+                        Price: d3.mean(values, d => +d.Price) // Calcul du prix moyen pour chaque marque
+                    };
+                });
+
+            // Définition de l'échelle x pour le graphique 1
+            const x1 = d3.scaleBand()
+                .range([0, width])
+                .domain(brandData.map(d => d.Brand)) // Domain pour l'échelle x
+                .padding(0.2); // Espacement entre les barres
+
+            // Ajout des axes au graphique 1
+            svg1.append("g")
+                .attr("transform", `translate(0, ${height})`) // Déplacement de l'axe en bas
+                .call(d3.axisBottom(x1)) // Ajout de l'axe x
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)") // Rotation des labels de l'axe x
+                .style("text-anchor", "end"); // Alignement des labels
+
+            // Définition de l'échelle y pour le graphique 1
+            const y1 = d3.scaleLinear()
+                .domain([0, d3.max(brandData, d => d.Price)]) // Domain pour l'échelle y
+                .range([height, 0]); // Orientation de l'échelle y
+            svg1.append("g")
+                .call(d3.axisLeft(y1)); // Ajout de l'axe y
+
+            // Ajout des barres pour le graphique 1
+            svg1.selectAll("mybar")
+                .data(brandData)
+                .join("rect")
+                .attr("x", d => x1(d.Brand)) // Position x de la barre
+                .attr("y", d => y1(d.Price)) // Position y de la barre
+                .attr("width", x1.bandwidth()) // Largeur de la barre
+                .attr("height", d => height - y1(d.Price)) // Hauteur de la barre
+                .attr("fill", "#87CEFA"); // Couleur de la barre
+
+            // Ajout des étiquettes pour le graphique 1
+            svg1.selectAll("text.label")
+                .data(brandData)
+                .join("text")
+                .attr("class", "label")
+                .attr("x", d => x1(d.Brand) + x1.bandwidth() / 2) // Position x de l'étiquette
+                .attr("y", d => y1(d.Price) - 5) // Position y de l'étiquette
+                .attr("text-anchor", "middle") // Alignement du texte
+                .text(d => d.Price.toFixed(2)) // Texte de l'étiquette
+                .attr("fill", "#ffffff"); // Couleur du texte
+
+            // Ajout du titre au bas du graphique 1
+            svg1.append("text")
+                .attr("class", "chart-title")
+                .attr("x", width / 2) // Position x du titre
+                .attr("y", height + margin.bottom - 20) // Position y du titre
+                .attr("text-anchor", "middle") // Alignement du texte
+                .style("fill", "#ffffff") // Couleur du texte
+                .text("Prix moyen par marque"); // Texte du titre
+
+            // Graphique 2: Notes moyennes par marque (Bar chart)
+            const ratingData = d3.groups(data, d => d.Brand)
+                .map(([key, values]) => {
+                    return {
+                        Brand: key,
+                        Rating: d3.mean(values, d => +d.Rating) // Calcul de la note moyenne pour chaque marque
+                    };
+                });
+
+            // Définition de l'échelle x pour le graphique 2
+            const x2 = d3.scaleBand()
+                .range([0, width])
+                .domain(ratingData.map(d => d.Brand)) // Domain pour l'échelle x
+                .padding(0.2); // Espacement entre les barres
+
+            // Ajout des axes au graphique 2
+            svg2.append("g")
+                .attr("transform", `translate(0, ${height})`) // Déplacement de l'axe en bas
+                .call(d3.axisBottom(x2)) // Ajout de l'axe x
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)") // Rotation des labels de l'axe x
+                .style("text-anchor", "end"); // Alignement des labels
+
+            // Définition de l'échelle y pour le graphique 2
+            const y2 = d3.scaleLinear()
+                .domain([0, d3.max(ratingData, d => d.Rating)]) // Domain pour l'échelle y
+                .range([height, 0]); // Orientation de l'échelle y
+            svg2.append("g")
+                .call(d3.axisLeft(y2)); // Ajout de l'axe y
+
+            // Ajout des barres pour le graphique 2
+            svg2.selectAll("mybar")
+                .data(ratingData)
+                .join("rect")
+                .attr("x", d => x2(d.Brand)) // Position x de la barre
+                .attr("y", d => y2(d.Rating)) // Position y de la barre
+                .attr("width", x2.bandwidth()) // Largeur de la barre
+                .attr("height", d => height - y2(d.Rating)) // Hauteur de la barre
+                .attr("fill", "#98FB98"); // Couleur de la barre
+
+            // Ajout des étiquettes pour le graphique 2
+            svg2.selectAll("text.label")
+                .data(ratingData)
+                .join("text")
+                .attr("class", "label")
+                .attr("x", d => x2(d.Brand) + x2.bandwidth() / 2) // Position x de l'étiquette
+                .attr("y", d => y2(d.Rating) - 5) // Position y de l'étiquette
+                .attr("text-anchor", "middle") // Alignement du texte
+                .text(d => d.Rating.toFixed(2)) // Texte de l'étiquette
+                .attr("fill", "#ffffff"); // Couleur du texte
+
+            // Ajout du titre au bas du graphique 2
+            svg2.append("text")
+                .attr("class", "chart-title")
+                .attr("x", width / 2) // Position x du titre
+                .attr("y", height + margin.bottom - 20) // Position y du titre
+                .attr("text-anchor", "middle") // Alignement du texte
+                .style("fill", "#ffffff") // Couleur du texte
+                .text("Notes moyennes par marque"); // Texte du titre
+
+            // Graphique 4: Graphique en Aire avec notes et prix
+            // Définition de l'échelle x pour le graphique 4
+            const x4 = d3.scaleBand()
+                .range([0, width])
+                .domain(brandData.map(d => d.Brand)) // Domain pour l'échelle x
+                .padding(0.2); // Espacement entre les barres
+
+            // Ajout des axes au graphique 4
+            svg4.append("g")
+                .attr("transform", `translate(0, ${height})`) // Déplacement de l'axe en bas
+                .call(d3.axisBottom(x4)) // Ajout de l'axe x
+                .selectAll("text")
+                .attr("transform", "translate(-10,0)rotate(-45)") // Rotation des labels de l'axe x
+                .style("text-anchor", "end"); // Alignement des labels
+
+            // Définition de l'échelle y pour le graphique 4
+            const y4 = d3.scaleLinear()
+                .domain([0, d3.max([...brandData.map(d => d.Price), ...ratingData.map(d => d.Rating)])]) // Domain pour l'échelle y
+                .range([height, 0]); // Orientation de l'échelle y
+            svg4.append("g")
+                .call(d3.axisLeft(y4)); // Ajout de l'axe y
+
+            // Définition des courbes pour les graphiques en aire
+            const areaPrice = d3.area()
+                .x(d => x4(d.Brand) + x4.bandwidth() / 2) // Position x de la courbe pour les prix
+                .y0(height) // Position y de base pour la courbe
+                .y1(d => y4(d.Price)) // Position y finale pour la courbe
+                .curve(d3.curveCardinal); // Type de courbe
+
+            const areaRating = d3.area()
+                .x(d => x4(d.Brand) + x4.bandwidth() / 2) // Position x de la courbe pour les notes
+                .y0(height) // Position y de base pour la courbe
+                .y1(d => y4(d.Rating)) // Position y finale pour la courbe
+                .curve(d3.curveCardinal); // Type de courbe
+
+            // Ajout des chemins pour les courbes en aire
+            svg4.append("path")
+                .datum(brandData)
+                .attr("fill", "rgba(135, 206, 250, 0.5)") // Couleur de remplissage pour les prix avec transparence
+                .attr("d", areaPrice); // Définition du chemin pour les prix
+
+            svg4.append("path")
+                .datum(ratingData)
+                .attr("fill", "rgba(152, 251, 152, 0.5)") // Couleur de remplissage pour les notes avec transparence
+                .attr("d", areaRating); // Définition du chemin pour les notes
+
+            // Ajout du titre au bas du graphique 4
+            svg4.append("text")
+                .attr("class", "chart-title")
+                .attr("x", width / 2) // Position x du titre
+                .attr("y", height + margin.bottom - 20) // Position y du titre
+                .attr("text-anchor", "middle") // Alignement du texte
+                .style("fill", "#ffffff") // Couleur du texte
+                .text("Comparaison des Prix et des Notes par Marque"); // Texte du titre
+        });
+    </script>
+</body>
+</html>
